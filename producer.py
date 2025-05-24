@@ -1,65 +1,42 @@
-
-
 import socket
-import select
 import time
+import argparse
+import logging
+from utils import send_text_via_socket
 
 HOST = 'localhost'
-addr = '127.0.0.1'
 PORT = 65439
 
-ACK_TEXT = 'text_received'
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 def main():
+    parser = argparse.ArgumentParser(description='Producer for Yet Another Kafka')
+    parser.add_argument('--topic', type=str, help='Topic to send messages to')
+    parser.add_argument('--message', type=str, help='Message to send')
+    parser.add_argument('--count', type=int, default=1, help='Number of producers to simulate')
+    args = parser.parse_args()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print('socket instantiated')
+    try:
+        sock.bind((HOST, PORT))
+        logging.info('Socket binded')
+        sock.listen()
+        logging.info('Socket now listening')
+        conn, addr = sock.accept()
+        logging.info(f'Socket accepted, got connection object from {addr}')
 
-    sock.bind((HOST, PORT))
-    print('socket binded')
-
-    sock.listen()
-    print('socket now listening')
-
-    conn, addr = sock.accept()
-    print('socket accepted, got connection object')
-
-    lis = []
-
-    while (True):
-        m = int(input("Enter the number of producers to be created: "))
-        for i in range(m):
-            print("for Producer number:", i+1)
-            lis.append((i+1))
-
-            message = input("Enter the message to be sent: ")
-            topic = input("Enter the topic: ")
-            lis.append(message)
-            lis.append(topic)
-
-            sendTextViaSocket(str(lis), conn)
-            sendTextViaSocket(str(topic), conn)
-            lis.clear()
+        for i in range(args.count):
+            logging.info(f'For Producer number: {i+1}')
+            message = args.message or input('Enter the message to be sent: ')
+            topic = args.topic or input('Enter the topic: ')
+            payload = str([i+1, message, topic])
+            send_text_via_socket(payload, conn)
+            send_text_via_socket(topic, conn)
             time.sleep(2)
-
+    except Exception as e:
+        logging.error(f'Producer error: {e}')
+    finally:
         sock.close()
-
-
-def sendTextViaSocket(message, sock):
-
-    encodedMessage = bytes(message, 'utf-8')
-
-    sock.sendall(encodedMessage)
-
-    encodedAckText = sock.recv(1024)
-    ackText = encodedAckText.decode('utf-8')
-
-    if ackText == ACK_TEXT:
-        print('Broker acknowledged reception of text')
-    else:
-        print('error: server has sent back ' + ackText)
-
 
 if __name__ == '__main__':
     main()

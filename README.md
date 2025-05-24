@@ -1,4 +1,3 @@
-
 # Yet Another Kafka (YaK)
 
 Welcome to **Yet Another Kafka** (YaK), a mini-Kafka implementation designed to simulate a distributed publish-subscribe messaging system.
@@ -11,6 +10,7 @@ Welcome to **Yet Another Kafka** (YaK), a mini-Kafka implementation designed to 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Architecture](#architecture)
+- [Testing](#testing)
 
 ## Project Overview
 
@@ -33,6 +33,7 @@ As a fully customizable mini-Kafka, it offers the flexibility to define the **nu
 - **Fault-Tolerant Brokers**: When the leader broker fails, a new leader is elected, and the system continues to operate.
 - **Mini-Zookeeper**: Monitors broker health and handles leader election.
 - **Acknowledgement System**: Ensures reliable message delivery with acknowledgments between Producers, Consumers, and Brokers.
+- **Logging**: Uses Python's logging module for better log management.
 
 ## Technologies Used
 
@@ -50,7 +51,7 @@ As a fully customizable mini-Kafka, it offers the flexibility to define the **nu
    ```
 
 2. **Set up environment**:
-   Ensure that Python 3.x is installed, along with any necessary libraries:
+   Ensure that Python 3.x is installed.
    ```bash
    pip install -r requirements.txt
    ```
@@ -70,20 +71,21 @@ As a fully customizable mini-Kafka, it offers the flexibility to define the **nu
 5. **Start Producers and Consumers**:
    To start a Producer:
    ```bash
-   python producer.py
+   python producer.py --topic my_topic --message "Hello, Kafka!" --count 1
    ```
    To start a Consumer:
    ```bash
-   python consumer.py
+   python consumer.py --topics my_topic --count 1 --from-beginning
    ```
 
 ## Usage
 
 ### Configurations
 
-- **Dynamic Topics**: Topics can be created and deleted dynamically based on the user's input.
+- **Dynamic Topics**: Topics can be created and deleted dynamically based on the user's input or via command-line arguments.
 - **Message Acknowledgements**: Producers will resend unacknowledged messages, ensuring message delivery.
 - **From-Beginning Mode**: Consumers can pull all past messages from the time of topic creation by using the `--from-beginning` flag.
+- **Logging**: All scripts use Python's logging module for output and error reporting.
 
 ### Example Usage
 
@@ -94,7 +96,7 @@ python producer.py --topic my_topic --message "Hello, Kafka!"
 
 Start a Consumer that reads from the beginning of the topic:
 ```bash
-python consumer.py --topic my_topic --from-beginning
+python consumer.py --topics my_topic --from-beginning
 ```
 
 ## Architecture
@@ -122,3 +124,13 @@ The system consists of multiple modules working together to simulate the functio
 |                  |       |                   |     |                   |
 +------------------+       +-------------------+     +-------------------+
 ```
+
+## Testing
+
+Unit tests for utility functions are provided in the `tests/` directory. To run the tests:
+
+```bash
+python -m unittest discover tests
+```
+
+All socket operations are tested using mocks for reliability.
