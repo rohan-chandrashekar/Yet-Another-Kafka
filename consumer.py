@@ -1,98 +1,46 @@
-
-
 import socket
-import select
 import time
+import argparse
+import logging
+from utils import send_text_via_socket, receive_text_via_socket
 
 HOST = 'localhost'
 PORT = 65440
-addr = '127.0.0.1'
 
-ACK_TEXT = 'text_received'
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
-
-def fetch_topics():
+def fetch_topics(topics=None, count=1):
     TopicNames = []
-
-    n = int(input("Enter the number of consumers to be created: "))
-    for i in range(n):
-        print("for each consumer, enter the topic to be subscribed to: ")
-        topic = input("Enter the topic: ")
-
-        TopicNames.append(topic)
-
+    if topics:
+        TopicNames = topics
+    else:
+        n = count
+        for i in range(n):
+            topic = input('Enter the topic to be subscribed to: ')
+            TopicNames.append(topic)
     return TopicNames
 
-
 def main():
+    parser = argparse.ArgumentParser(description='Consumer for Yet Another Kafka')
+    parser.add_argument('--topics', nargs='+', help='Topics to subscribe to')
+    parser.add_argument('--count', type=int, default=1, help='Number of consumers to simulate')
+    parser.add_argument('--from-beginning', action='store_true', help='Read from beginning')
+    args = parser.parse_args()
 
     sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print('socket2 instantiated')
-
-    connectionSuccessful = False
-    while not connectionSuccessful:
-        try:
-            sock2.connect((HOST, PORT))
-            print('socket2 connected')
-            connectionSuccessful = True
-        except:
-            pass
-
-    temp_arr = fetch_topics()
-
-    socks = [sock2]
-    while True:
-
-        readySocks, _, _ = select.select(socks, [], [], 5)
-
-        for sock2 in readySocks:
-            message = receiveTextViaSocket(sock2)
-            topic = receiveTextViaSocket(sock2)
-
-            stuff = []
+    try:
+        sock2.connect((HOST, PORT))
+        logging.info('Socket2 connected')
+        temp_arr = fetch_topics(args.topics, args.count)
+        while True:
+            message = receive_text_via_socket(sock2)
+            topic = receive_text_via_socket(sock2)
             if topic in temp_arr:
-                for i in range(len(temp_arr)):
-                    if (temp_arr[i] == topic):
-                        stuff.append(i+1)
-
-                print("To Consumer Numbers: ")
-                print(stuff)
-                print("Message received from producer Number: " + message[1])
-                print("Message and Topic Recieved: [" + message[3:])
-                stuff.clear()
-
-
-def sendTextViaSocket(message, sock):
-
-    encodedMessage = bytes(message, 'utf-8')
-
-    sock.sendall(encodedMessage)
-
-    encodedAckText = sock.recv(1024)
-    ackText = encodedAckText.decode('utf-8')
-
-    if ackText == ACK_TEXT:
-        print('Broker acknowledged reception of text')
-    else:
-        print('error: server has sent back ' + ackText)
-
-
-def receiveTextViaSocket(sock):
-
-    encodedMessage = sock.recv(1024)
-
-    if not encodedMessage:
-        print('error: encodedMessage was received as None')
-        return None
-
-    message = encodedMessage.decode('utf-8')
-
-    encodedAckText = bytes(ACK_TEXT, 'utf-8')
-
-    sock.sendall(encodedAckText)
-
-    return message
-
+                logging.info(f'Message received for topic {topic}: {message}')
+    except Exception as e:
+        logging.error(f'Consumer error: {e}')
+    finally:
+        sock2.close()
 
 if __name__ == '__main__':
     main()
